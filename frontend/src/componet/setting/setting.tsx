@@ -10,7 +10,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl w-full mx-auto space-y-8 pb-12">
       
-      {/* HEADER CARD */}
+      {/* HEADER CARD */}z
       <div className="bg-[#0b132b] p-6 rounded-2xl border border-gray-800/60 shadow-xl flex justify-between items-center relative overflow-hidden group">
         <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#a855f7]/10 rounded-full blur-3xl pointer-events-none"></div>
         <div>
