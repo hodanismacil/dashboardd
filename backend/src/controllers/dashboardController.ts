@@ -1,18 +1,20 @@
 import { Request, Response } from "express";
-import { UserAnalytics } from "../controllers/IUserAnalytics";
+// ✅ Waxaan ka soo dhoofsanaynaa Model-ka dhabta ah ee ka jira folder-ka models
+import User from "../models/User";
 
 export const getDashboardSummary = async (
   req: Request,
   res: Response
-) => {
+): Promise<void> => {
   try {
-    const totalUsers = await UserAnalytics.countDocuments();
+    // 1. Xisaabi dhammaan dadka ku jira database-ka
+    const totalUsers = await User.countDocuments();
 
-    const activeUsers = await UserAnalytics.countDocuments({
-      status: "Active",
-    });
+    // 2. Xisaabi inta Active ah (Waxaan u beddelnay User halkii ay ka ahayd UserAnalytics)
+  const activeUsersCount = await User.countDocuments({ status: "Active" });;
 
-    const revenue = await UserAnalytics.aggregate([
+    // 3. Isku gee dakhliga guud ee monthlySpending
+    const revenue = await User.aggregate([
       {
         $group: {
           _id: null,
@@ -23,30 +25,32 @@ export const getDashboardSummary = async (
       },
     ]);
 
-    // 📊 XOGTA GARAFAKA: Waxaan u samaynaynaa array xogta bilaha ah si uu garaafku u sawirmo
-    // Mustaqbalka MongoDB aggregation ayaad ku soo saari kartaa, laakiin hadda si uu garaafku u shaqeeyo, kan ayaa ugu fudud:
     const totalRevAmount = revenue[0]?.totalRevenue || 0;
     
+    // 4. Garaafka Dashboard-ka
     const chartData = [
-      { name: 'Jan', revenue: totalRevAmount * 0.2 }, // Tusaale: 20% ka mid ah dakhliga
+      { name: 'Jan', revenue: totalRevAmount * 0.2 },
       { name: 'Feb', revenue: totalRevAmount * 0.4 }, 
       { name: 'Mar', revenue: totalRevAmount * 0.3 }, 
       { name: 'Apr', revenue: totalRevAmount * 0.6 }, 
       { name: 'May', revenue: totalRevAmount * 0.8 }, 
-      { name: 'Jun', revenue: totalRevAmount },       // Bisha hadda la joogo wuxuu tusayaa $64 dhabta ah
+      { name: 'Jun', revenue: totalRevAmount },
     ];
 
-    res.json({
-      success: true,
-      data: {
-        totalUsers,
-        activeUsers,
-        totalRevenue: totalRevAmount,
-      },
-      chartData, // ✅ Khadkan ayaan ku darnay si uu frontend-ka u gaadho garaafku!
-    });
+    // 5. U dir Frontend-ka
+res.status(200).json({
+  success: true,
+  data: {
+    totalUsers: totalUsers,
+    activeUsers: activeUsersCount, // 👈 Waxay ku dhex jirtaa "data"
+    totalRevenue: totalRevAmount,
+  },
+  chartData, 
+});
   } catch (error: any) {
-    res.status(500).json({
+    console.error("Dashboard Summary Error:", error);
+    
+     res.status(500).json({
       success: false,
       message: error.message,
     });

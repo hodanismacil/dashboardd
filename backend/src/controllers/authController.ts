@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import Notification from "../modele/Notification";
 
 
 
@@ -27,12 +28,18 @@ export const register = async (
       email,
       password: await bcrypt.hash(password, 10),
     });
-
+    await Notification.create({
+      title: "new user!",
+      message: `${user.name} has joined the platform!`,
+      type: "success",
+      isRead: false,
+    });
     res.status(201).json({
       success: true,
       data: user,
     });
   } catch (error) {
+    console.log("🔴 ERROR-KA DIWAANGALINTA:", error);
     res.status(500).json({
       success: false,
       message: "Server Error",

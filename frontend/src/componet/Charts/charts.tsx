@@ -1,40 +1,172 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface AnalyticsProps {
-  chartData: any[];
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+interface UserSpending {
+  name: string;
+  spending: number;
 }
 
-export default function AnalyticsPage({ chartData }: AnalyticsProps) {
-  
-  if (!chartData || chartData.length === 0) {
+interface StatusDistribution {
+  name: string;
+  value: number;
+}
+
+export default function AnalyticsPage() {
+  const [userSpending, setUserSpending] = useState<UserSpending[]>([]);
+  const [statusDistribution, setStatusDistribution] = useState<
+    StatusDistribution[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const COLORS = ["#22c55e", "#ef4444"];
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get(
+        "http://localhost:5000/api/dashboard/analytics"
+      );
+
+      setUserSpending(res.data.data.userSpending);
+      setStatusDistribution(res.data.data.statusDistribution);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "⚠️ Xogtii falanqaynta waa la waayey"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalUsers = userSpending.length;
+
+  const totalRevenue = userSpending.reduce(
+    (sum, user) => sum + user.spending,
+    0
+  );
+
+  const activeUsers =
+    statusDistribution.find(
+      (item) => item.name === "Active Users"
+    )?.value || 0;
+
+  if (loading) {
     return (
-      <div className="bg-[#0b132b] p-8 rounded-2xl border border-gray-800/60 shadow-xl text-center text-gray-400">
-        Xogta jaantuska hadda ayaa la soo rarayaa... 🔄
+      <div className="p-8 text-white">
+        Loading Analytics...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-red-500 font-semibold">
+        {error}
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0b132b] p-8 rounded-2xl border border-gray-800/60 shadow-xl">
-      <h2 className="text-xl font-bold text-white mb-2">Advanced Data Analytics</h2>
-      <p className="text-gray-400 text-sm mb-6">Halkan ka eeg qaabka uu u korayo dakhliga guud ee shirkadda.</p>
-      
-      <div className="w-full mt-4">
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-            <XAxis dataKey="name" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#374151', borderRadius: '12px' }} />
-            
-            {/* 🎯 Waxaan halkan ku darnay dhammaan furayaasha suurtogalka ah ee uu backend-ku soo celin karo */}
-            <Bar dataKey="revenue" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="sales" fill="#3b82f6" radius={[6, 6, 0, 0]} /> 
-            <Bar dataKey="value" fill="#a855f7" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="users" fill="#a855f7" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="p-6 min-h-screen bg-slate-950 text-white">
+      <h1 className="text-3xl font-bold mb-8">
+        Analytics Dashboard
+      </h1>
+
+      {/* Cards */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-800">
+          <p className="text-slate-400">Total Users</p>
+          <h2 className="text-3xl font-bold mt-2">
+            {totalUsers}
+          </h2>
+        </div>
+
+        <div className="bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-800">
+          <p className="text-slate-400">Active Users</p>
+          <h2 className="text-3xl font-bold mt-2 text-green-400">
+            {activeUsers}
+          </h2>
+        </div>
+
+        <div className="bg-slate-900 rounded-xl p-6 shadow-lg border border-slate-800">
+          <p className="text-slate-400">Total Revenue</p>
+          <h2 className="text-3xl font-bold mt-2 text-cyan-400">
+            ${totalRevenue.toLocaleString()}
+          </h2>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Bar Chart */}
+        <div className="bg-slate-900 p-6 rounded-xl shadow-lg border border-slate-800">
+          <h2 className="text-xl font-semibold mb-6">
+            User Spending
+          </h2>
+
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={userSpending}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="spending" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-slate-900 p-6 rounded-xl shadow-lg border border-slate-800">
+          <h2 className="text-xl font-semibold mb-6">
+            User Status Distribution
+          </h2>
+
+          <ResponsiveContainer width="100%" height={350}>
+            <PieChart>
+              <Pie
+                data={statusDistribution}
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                dataKey="value"
+                label
+              >
+                {statusDistribution.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
 }
+

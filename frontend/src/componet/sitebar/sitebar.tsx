@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios'; // 🌐 Axios si aad backend-ka u wacdo
 import { 
-  LayoutGrid, BarChart2, Users, Settings, ChevronLeft, ChevronRight, LogOut, Search, Bell, Star, Menu, X
+  LayoutGrid, BarChart2, Users, Settings, ChevronLeft, ChevronRight, LogOut, Search, Bell, Star, Menu, X,
+  MessageSquare
 } from 'lucide-react';
 import AnalyticsPage from '../Charts/charts';
 import DashboardOverview from '../../pages/Dashboud';
 import UsersPage from '../user/user';
-import EmailPage from '../emalis/emails';
+
 import NotificationsPage from '../notifications/notifications';
 import SettingsPage from '../setting/setting';
 import { useNavigate } from 'react-router-dom';
+import CustomerMessages from '../Customer Messages/Customer Messages';
+
 
 
 export default function Sidebar() {
@@ -21,6 +24,7 @@ export default function Sidebar() {
     localStorage.getItem("user") || "{}"
   );
 
+  const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -28,6 +32,7 @@ export default function Sidebar() {
     localStorage.removeItem("user");
     navigate("/");
   };
+
 
   // 🧪 ======= BACKEND STATES =======
   const [backendChartData, setBackendChartData] = useState<any[]>([]);
@@ -51,13 +56,32 @@ export default function Sidebar() {
       });
   }, []);
 
+useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/notifications");
+        if (res.data && res.data.data) {
+          setNotifications(res.data.data); // Halkan ayuu state-ka ku kaydinayaa
+        }
+      } catch (err) {
+        console.error("Cilad marka la keenayo ogeysiisyada:", err);
+      }
+    };
+
+    fetchNotifications(); // 🔥 KAN AYAA MAQNAA: halkan ku wac shaqada si ay u fuliso fetch-ka!
+
+    // OPTIONAL: Haddii aad rabto inuu 10-kii ilbiriqsiba iskiis u hubiyo ogeysiis cusub:
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const menuItems = [
     { icon: <LayoutGrid size={22} />, text: 'Dashboard' },
     { icon: <BarChart2 size={22} />, text: 'Analytics' },
     { icon: <Users size={22} />, text: 'Users' },
     { icon: <Settings size={22} />, text: 'Settings' },
-    { icon: <Star size={22} />, text: 'Email' },
-    { icon: <Bell size={22} />, text: 'NOTIFICATIONS' } 
+    { icon: <MessageSquare size={22} />, text: 'Customer Messages' },
+    { icon: <Bell size={22} />, text: 'Notifications' } 
   ];
 
   return (
@@ -179,30 +203,41 @@ export default function Sidebar() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setActiveMenu('NOTIFICATIONS')}
-              className="p-2.5 text-gray-400 hover:text-[#a855f7] bg-gray-900/60 border border-gray-800 rounded-xl transition-all relative group"
-            >
-              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-[#0b132b] shadow-md shadow-red-500/20 animate-bounce">
-                3
-              </span>
-              <Bell size={18} className="group-hover:rotate-12 transition-transform" />
-            </button>
-            <div className="flex items-center gap-3 border-l border-gray-800 pl-4">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#a855f7] to-blue-600 p-0.5 shadow-md">
-                <div className="w-full h-full bg-[#0b132b] rounded-[10px] flex items-center justify-center text-white font-bold text-xs">AD</div>
-              </div>
-              <div className="hidden lg:block">
-                <p className="text-xs font-semibold text-gray-200">
-                     {user.name}
-              </p>
 
-<                p className="text-[10px] text-purple-400 font-medium">
-            {user.role}
-               </p>
-              </div>
-            </div>
-          </div>
+  {/* Notification Bell */}
+  <div className="relative">
+    <button
+      onClick={() => setActiveMenu("NOTIFICATIONS")}
+      className="p-2.5 text-gray-400 hover:text-[#a855f7] bg-gray-900/60 border border-gray-800 rounded-xl transition-all"
+    >
+      <Bell size={18} />
+    </button>
+
+    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-[#0b132b]">
+     {notifications.filter((n: any) => !n.isRead).length}
+    </span>
+  </div>
+
+  {/* User Profile */}
+  <div className="flex items-center gap-3 border-l border-gray-800 pl-4">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#a855f7] to-blue-600 p-0.5 shadow-md">
+      <div className="w-full h-full bg-[#0b132b] rounded-[10px] flex items-center justify-center text-white font-bold text-xs">
+        AD
+      </div>
+    </div>
+
+    <div className="hidden lg:block">
+      <p className="text-xs font-semibold text-gray-200">
+        {user.name}
+      </p>
+
+      <p className="text-[10px] text-purple-400 font-medium">
+        {user.role}
+      </p>
+    </div>
+  </div>
+
+</div>
         </header>
 
         {/* 🧠 ENGINE-KA RENDERING BOGAGGA — Halkan ayaa lagu daray min-w-0 iyo min-h-0 si Recharts loo dawayn karo */}
@@ -220,8 +255,8 @@ export default function Sidebar() {
               
               {activeMenu === 'Tailwind' && <div className="text-gray-400">Bogga Tailwind...</div>}
               {activeMenu === 'Users' && <UsersPage />}
-              {activeMenu === 'Email' && <EmailPage />}
-              {activeMenu === 'NOTIFICATIONS' && <NotificationsPage />}
+              {activeMenu === 'Customer Messages' && <CustomerMessages />}
+              {activeMenu === 'Notifications' && <NotificationsPage />}
               {activeMenu === 'Settings' && <SettingsPage />}
             </>
           )}

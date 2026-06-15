@@ -1,22 +1,22 @@
 import { Router, Request, Response } from 'express';
-
-import { UserAnalytics } from '../controllers/IUserAnalytics';
-
+// ✅ HALKAN AYAA SI SAX AH LOO BEDDELAY: Ugu yeer User xaraf weyn si uu ula jaanqaado koodhka hoose
+import User from '../models/User';
 
 
 const router = Router();
 
-// GET USERS
-router.get('/users', async (req: Request, res: Response) => {
-  try {
-    const users = await UserAnalytics.find().sort({ createdAt: -1 });
 
-    res.status(200).json({
+// GET USERS
+router.get('/users', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+
+    return res.status(200).json({
       success: true,
       data: users,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -24,16 +24,16 @@ router.get('/users', async (req: Request, res: Response) => {
 });
 
 // ADD USER
-router.post('/add-user', async (req: Request, res: Response) => {
+router.post('/add-user', async (req: Request, res: Response): Promise<any> => {
   try {
-    const user = await UserAnalytics.create(req.body);
+    const newUser = await User.create(req.body);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      data: user,
+      data: newUser,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -41,20 +41,20 @@ router.post('/add-user', async (req: Request, res: Response) => {
 });
 
 // UPDATE USER
-router.put('/edit-user/:id', async (req: Request, res: Response) => {
+router.put('/edit-user/:id', async (req: Request, res: Response): Promise<any> => {
   try {
-    const user = await UserAnalytics.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      data: user,
+      data: updatedUser,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -62,16 +62,16 @@ router.put('/edit-user/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE USER
-router.delete('/delete-user/:id', async (req: Request, res: Response) => {
+router.delete('/delete-user/:id', async (req: Request, res: Response): Promise<any> => {
   try {
-    await UserAnalytics.findByIdAndDelete(req.params.id);
+    await User.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'User deleted',
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/users"; // U daa halkan salka API-ga si uu routes-ka kale ugu daro jidka saxda ah
+const API_URL = "http://localhost:5000/api/users"; 
 
 interface User {
   _id: string;
@@ -19,17 +19,16 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  // States-ka Maareynta Modal-ka (Add/Edit Form)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // States-ka Form-ka hantiyeed
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     role: "User",
     status: "Active",
     monthlySpending: 0,
+    password: "", 
   });
 
   const token = localStorage.getItem("token");
@@ -40,13 +39,14 @@ export default function UsersPage() {
     },
   };
 
-  // 1. 📤 GET: Ka soo dhuuq xogta Backend-ka
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}`, axiosConfig);
-      setUsers(res.data.data);
-      setFilteredUsers(res.data.data);
+      // Hubi qaabka backend-ku xogta u soo celiyo res.data ama res.data.data
+      const fetchedData = res.data.data || res.data || [];
+      setUsers(fetchedData);
+      setFilteredUsers(fetchedData);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load users");
     } finally {
@@ -58,24 +58,21 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // 🔎 Shaqada raadinta (Search Filter)
   useEffect(() => {
     const result = users.filter(
       (user) =>
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase())
+        user.name?.toLowerCase().includes(search.toLowerCase()) ||
+        user.email?.toLowerCase().includes(search.toLowerCase())
     );
     setFilteredUsers(result);
   }, [search, users]);
 
-  // Furitaanka Modal-ka marka qof cusub la darayo
   const handleOpenAddModal = () => {
     setEditingUser(null);
-    setFormData({ name: "", email: "", role: "User", status: "Active", monthlySpending: 0 });
+    setFormData({ name: "", email: "", role: "User", status: "Active", monthlySpending: 0, password: "" });
     setIsModalOpen(true);
   };
 
-  // Furitaanka Modal-ka marka qof la beddelayo (Edit)
   const handleOpenEditModal = (user: User) => {
     setEditingUser(user);
     setFormData({
@@ -83,40 +80,49 @@ export default function UsersPage() {
       email: user.email,
       role: user.role,
       status: user.status,
-      monthlySpending: user.monthlySpending,
+      monthlySpending: user.monthlySpending || 0,
+      password: "", 
     });
     setIsModalOpen(true);
   };
 
-  // 2 & 3. 📥 SUBMIT: Ku daris ama Wax ka beddel (Add or Edit)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (formData.monthlySpending < 0) {
+      // 📝 Xaqiijinta in monthlySpending uu yahay Number nadiif ah
+      const dataToSend = {
+        ...formData,
+        monthlySpending: Number(formData.monthlySpending)
+      };
+
+      if (dataToSend.monthlySpending < 0) {
         alert("Fadlan monthly spending kama yaraan karo 0!");
         return;
       }
 
+      if (editingUser && !dataToSend.password) {
+        delete (dataToSend as any).password;
+      }
+
       if (editingUser) {
-        // PUT: Edit User
         const res = await axios.put(
-  `${API_URL}/edit-user/${editingUser._id}`,
-  formData,
-  axiosConfig
-);
-        if (res.data.success) {
-          setUsers(users.map((u) => (u._id === editingUser._id ? res.data.data : u)));
+          `${API_URL}/edit-user/${editingUser._id}`,
+          dataToSend,
+          axiosConfig
+        );
+        if (res.data.success || res.data) {
+          // Dib u dhuuq xogta cusub si uu table-ku u update-gargaro
+          await fetchUsers();
           setIsModalOpen(false);
         }
       } else {
-        // POST: Add User
         const res = await axios.post(
-     `${API_URL}/add-user`,
-     formData,
-     axiosConfig
+          `${API_URL}/add-user`,
+          dataToSend,
+          axiosConfig
         );
-        if (res.data.success) {
-          setUsers([res.data.data, ...users]);
+        if (res.data.success || res.data) {
+          await fetchUsers();
           setIsModalOpen(false);
         }
       }
@@ -125,7 +131,6 @@ export default function UsersPage() {
     }
   };
 
-  // 4. ❌ DELETE: Tirtirista isticmaalaha
   const handleDelete = async (id: string) => {
     const confirmDelete = window.confirm("Ma hubtaa inaad tirtirayso user-kan?");
     if (!confirmDelete) return;
@@ -162,7 +167,6 @@ export default function UsersPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-2 rounded-xl text-black bg-white w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
           />
-          {/* ✅ Badhanka ku darista oo hadda Modal-ka toos u furaya */}
           <button
             onClick={handleOpenAddModal}
             className="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-all whitespace-nowrap"
@@ -198,7 +202,10 @@ export default function UsersPage() {
                     {user.status}
                   </span>
                 </td>
-                <td className="p-4 font-medium">${user.monthlySpending.toLocaleString()}</td>
+                {/* 💰 Bandhigga Lacagta */}
+                <td className="p-4 font-medium">
+                  ${user.monthlySpending !== undefined && user.monthlySpending !== null ? user.monthlySpending.toLocaleString() : "0"}
+                </td>
                 <td className="p-4 text-center space-x-2">
                   <button
                     onClick={() => handleOpenEditModal(user)}
@@ -219,7 +226,6 @@ export default function UsersPage() {
         </table>
       </div>
 
-      {/* 📋 POPUP MODAL FOR ADD / EDIT USER */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4 z-50">
           <div className="bg-[#0b132b] border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
@@ -267,6 +273,21 @@ export default function UsersPage() {
                   </select>
                 </div>
               </div>
+              
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                  Password {editingUser && <span className="text-gray-500 lowercase">(optional)</span>}
+                </label>
+                <input
+                  type="password" 
+                  required={!editingUser} 
+                  placeholder={editingUser ? "Gali mid cusub ama iska daa" : "Gali password-ka"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full bg-[#070b19] border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Monthly Spending ($)</label>
                 <input

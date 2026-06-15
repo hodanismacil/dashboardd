@@ -1,115 +1,187 @@
-import React, { useState } from 'react';
-import { Bell, CheckCircle2, AlertTriangle, UserPlus, ShieldAlert, Trash2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Bell,
+  UserPlus,
+  Trash2,
+  ShieldCheck,
+} from "lucide-react";
+
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function NotificationsPage() {
-  const [activeTab, setActiveTab] = useState('All');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const notifications = [
-    {
-      id: 1,
-      title: "Lacag bixin guulaysatay",
-      desc: "Macaamiil Axmed Cali ah ayaa bixiyey lacag dhan $1,200 oo ah rukunka sanadka.",
-      time: "2 daqiiqo ka hor",
-      type: "success",
-      icon: <CheckCircle2 className="text-emerald-400" size={20} />,
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20"
+  const API_URL = "http://localhost:5000/api/notifications";
+  
+  // 🔑 Soo qaado token-ka si loogu xiro amniga backend-ka
+  const token = localStorage.getItem("token");
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-    {
-      id: 2,
-      title: "Digniin: Server Load",
-      desc: "Isticmaalka CPU-ga server-ka wuxuu gaadhay 88%. Fadlan eeg optimization-ka database-ka.",
-      time: "10 daqiiqo ka hor",
-      type: "warning",
-      icon: <AlertTriangle className="text-amber-400" size={20} />,
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20"
-    },
-    {
-      id: 3,
-      title: "User cusub ayaa ku soo biiray",
-      desc: "Suhayb Maxamed ayaa hadda iska diiwaan geliyey barnaamijka AdminPro.",
-      time: "1 saac ka hor",
-      type: "info",
-      icon: <UserPlus className="text-blue-400" size={20} />,
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20"
-    },
-    {
-      id: 4,
-      title: "Isku day login oo fashilmay",
-      desc: "Qof raba inuu soo galo nidaamka ayaa IP ka duwan ka isku dayey 3 jeer.",
-      time: "5 saac ka hor",
-      type: "danger",
-      icon: <ShieldAlert className="text-rose-400" size={20} />,
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/20"
+  };
+
+  // 🔄 1. Shaqada soo qaadista ogeysiisyada (Hal meel ayaan ku mideynay)
+  const fetchNotifications = async () => {
+    try {
+      // 🔥 Halkan waxaan ku darnay 'axiosConfig' si uu Token-ku u raaco
+      const res = await axios.get(API_URL, axiosConfig);
+      
+      console.log("Xogta Ogeysiisyada ee soo dhacday:", res.data);
+
+      // 🛡️ Hubi qaabka xogtu u soo dhacday si uusan koodhku u crash-garayn
+      if (res.data && res.data.data) {
+        setNotifications(res.data.data);
+      } else if (Array.isArray(res.data)) {
+        setNotifications(res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // ⚡ 2. Hal Effect oo kaliya ayaa ku filan bogga marka uu bilowdo
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // 🏛️ 3. Calaamadeynta "Read"
+  const markAsRead = async (id: string) => {
+    try {
+      await axios.put(`${API_URL}/read/${id}`, {}, axiosConfig);
+
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item._id === id ? { ...item, isRead: true } : item
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return UserPlus;
+      case "danger":
+        return Trash2;
+      case "info":
+        return ShieldCheck;
+      default:
+        return Bell;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#020B24] text-white flex items-center justify-center">
+        🔄 Loading Notifications...
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl w-full mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0b132b] p-6 rounded-2xl border border-gray-800/60 shadow-xl">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Bell size={22} className="text-[#a855f7]" /> Center Notifications
-          </h2>
-          <p className="text-xs text-gray-400 mt-1">Maamul ogeysiisyada nidaamka iyo digniinnada amniga.</p>
+    <div className="min-h-screen bg-[#020B24] text-white p-6">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-bold">Notifications</h1>
+      </div>
+
+      {notifications.length === 0 ? (
+        <div className="text-center text-slate-500 py-10 bg-[#071633] rounded-2xl border border-slate-800">
+          📭 Wax ogeysiis ah hadda kuma jiraan bogaan.
         </div>
-        <button className="flex items-center gap-2 text-xs font-semibold bg-gray-900 hover:bg-gray-800 border border-gray-800 px-4 py-2.5 rounded-xl text-gray-300 transition-all">
-          <Trash2 size={14} /> Clear All
-        </button>
-      </div>
+      ) : (
+        <div className="grid gap-5">
+          {notifications.map((notification) => {
+            const Icon = getIcon(notification.type);
 
-      {/* Tabs Menu */}
-      <div className="flex border-b border-gray-800/60 gap-6 text-sm font-medium px-2">
-        {['All', 'Unread', 'System'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 relative transition-colors ${activeTab === tab ? 'text-[#a855f7] font-bold' : 'text-gray-400 hover:text-gray-200'}`}
-          >
-            {tab} Notifications
-            {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#a855f7] rounded-full shadow-[0_0_8px_#a855f7]"></span>
-            )}
-          </button>
-        ))}
-      </div>
+            return (
+              <div
+                key={notification._id}
+                className={`bg-[#071633] border rounded-2xl p-5 hover:border-purple-500 transition ${
+                  notification.isRead ? "border-slate-800 opacity-70" : "border-purple-500/40"
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-xl ${
+                    notification.type === "success" ? "bg-green-600/20 text-green-400" :
+                    notification.type === "danger" ? "bg-red-600/20 text-red-400" : "bg-purple-600 text-white"
+                  }`}>
+                    <Icon size={22} />
+                  </div>
 
-      {/* Notifications List */}
-      <div className="space-y-4">
-        {notifications.map((notif) => (
-          <div 
-            key={notif.id} 
-            className={`bg-[#0b132b] p-5 rounded-2xl border ${notif.border} flex gap-5 items-start hover:scale-[1.01] transition-all cursor-pointer relative overflow-hidden group`}
-          >
-            {/* Background Glow on Hover */}
-            <div className={`absolute inset-0 ${notif.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}></div>
-            
-            {/* Icon Box */}
-            <div className={`p-3 rounded-xl border ${notif.border} ${notif.bg} flex items-center justify-center shrink-0 z-10`}>
-              {notif.icon}
-            </div>
-            
-            {/* Text Content */}
-            <div className="flex-1 min-w-0 z-10">
-              <div className="flex justify-between items-start gap-4">
-                <h3 className="font-bold text-gray-100 text-sm md:text-base group-hover:text-white transition-colors">
-                  {notif.title}
-                </h3>
-                <span className="text-xs text-gray-500 font-medium bg-gray-900/60 px-2 py-1 rounded-md border border-gray-800/40 shrink-0">
-                  {notif.time}
-                </span>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="font-semibold text-lg">
+                          {notification.title}
+                        </h2>
+                        <p className="text-slate-400 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div>
+                        {notification.isRead ? (
+                          <span className="text-green-400 text-sm font-medium">Read</span>
+                        ) : (
+                          <button
+                            onClick={() => markAsRead(notification._id)}
+                            className="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-lg text-sm transition"
+                          >
+                            Mark Read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs md:text-sm text-gray-400 mt-1.5 leading-relaxed">
-                {notif.desc}
-              </p>
-            </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Timeline */}
+      {notifications.length > 0 && (
+        <div className="mt-10 bg-[#071633] rounded-2xl p-6 border border-slate-800">
+          <h2 className="text-2xl font-bold mb-6">Activity Timeline</h2>
+          <div className="space-y-6 relative before:absolute before:inset-0 before:left-2 before:bg-slate-800 before:w-[2px] before:my-2">
+            {notifications.map((notification) => (
+              <div key={"timeline-" + notification._id} className="flex gap-4 relative z-10">
+                <div
+                  className={`w-4 h-4 rounded-full mt-1.5 border-4 border-[#071633] ${
+                    notification.type === "success" ? "bg-green-500" :
+                    notification.type === "danger" ? "bg-red-500" : "bg-purple-500"
+                  }`}
+                />
+                <div>
+                  <h3 className="font-semibold">{notification.title}</h3>
+                  <p className="text-slate-400 text-sm">{notification.message}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
