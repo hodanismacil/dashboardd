@@ -207,7 +207,7 @@ useEffect(() => {
   {/* Notification Bell */}
   <div className="relative">
     <button
-      onClick={() => setActiveMenu("NOTIFICATIONS")}
+      onClick={() => setActiveMenu("notifications")}
       className="p-2.5 text-gray-400 hover:text-[#a855f7] bg-gray-900/60 border border-gray-800 rounded-xl transition-all"
     >
       <Bell size={18} />
