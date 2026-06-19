@@ -16,7 +16,7 @@ export default function Login() {
       setLoading(true);
 
       const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
+     "https://dashboardd-gules.vercel.app/api/auth/login",
         {
           email,
           password,
