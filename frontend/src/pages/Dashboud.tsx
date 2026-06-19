@@ -21,7 +21,7 @@ export default function DashboardOverview() {
         const token = localStorage.getItem("token");
 
         const res = await axios.get(
-          "http://localhost:5000/api/dashboard/summary",
+            "https://dashboardd-gules.vercel.app/api/dashboard/summary",
           {
             headers: {
               Authorization: `Bearer ${token}`,

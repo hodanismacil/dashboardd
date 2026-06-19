@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 import connectDB from './config/db';
 import dashboardRoutes from './routes/dashbouRuoter';
@@ -34,7 +35,19 @@ app.get("/api/dashboard/summary", getDashboardSummary);
 
 
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 daqiiqo gudahood
+  max: 100, // IP kasta wuxuu samayn karaa kaliya 100 codsi (requests) 15-kaas daqiiqo gudahood
+  message: {
+    status: 429,
+    message: "Codsiyo aad u badan ayaa naga soo gaadhay IP-gaga, fadlan sug 15 daqiiqo."
+  },
+  standardHeaders: true, // Waxay dib ugu celinaysaa macluumaadka xadka RateLimit ee gudaha headers-ka
+  legacyHeaders: false, // Meesha ka saar X-RateLimit-* headers-ka duugga ah
+});
 
+
+app.use(limiter); 
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API Working' });

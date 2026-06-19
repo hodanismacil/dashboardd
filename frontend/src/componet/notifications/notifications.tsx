@@ -19,8 +19,8 @@ interface Notification {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const API_URL = "http://localhost:5000/api/notifications";
+const API_URL = "http://localhost:5000/api/notifications";
+  
   
   // 🔑 Soo qaado token-ka si loogu xiro amniga backend-ka
   const token = localStorage.getItem("token");
